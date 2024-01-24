@@ -4,9 +4,6 @@ using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
 using Reloaded.Mod.Interfaces;
 using Reloaded.Mod.Interfaces.Internal;
 using System.Runtime.InteropServices;
-using System;
-using System.IO;
-using System.Linq;
 
 namespace P5R.CustomCursor;
 
@@ -21,7 +18,7 @@ public unsafe class Mod : ModBase
 	private readonly nint* cursorPtr;
 	private IAsmHook? cursorHook;
 
-	private static string lastCursorFile = "";
+	private readonly List<string> cursorFiles = new();
 
 	public Mod(ModContext context)
 	{
@@ -53,10 +50,20 @@ public unsafe class Mod : ModBase
 			this.cursorHook = hooks!.CreateAsmHook(patch, result).Activate();
 		});
 
-		this.modLoader.ModLoaded += this.OnModLoading;
+		this.modLoader.ModLoaded += this.OnModLoaded;
+		this.modLoader.OnModLoaderInitialized += this.OnModLoaderInitialized;
 	}
 
-	private void OnModLoading(IModV1 mod, IModConfigV1 config)
+	private void OnModLoaderInitialized()
+    {
+		if (this.cursorFiles.Count > 0)
+        {
+            var cursorFile = this.cursorFiles[Random.Shared.Next(this.cursorFiles.Count)];
+            this.LoadCursor(cursorFile);
+        }
+    }
+
+	private void OnModLoaded(IModV1 mod, IModConfigV1 config)
 	{
 		if (!config.ModDependencies.Contains(this.modConfig.ModId)
 			|| *this.cursorPtr != IntPtr.Zero)
@@ -64,32 +71,31 @@ public unsafe class Mod : ModBase
 			return;
 		}
 
-		var cursorFolderPath = Path.Join(this.modLoader.GetDirectoryForModId(config.ModId), "cursor");
-		if (Directory.Exists(cursorFolderPath))
+		var modDir = this.modLoader.GetDirectoryForModId(config.ModId);
+
+		var cursorFile = Path.Join(modDir, "cursor.dds");
+		if (File.Exists(cursorFile))
 		{
-			var cursorFiles = Directory.GetFiles(cursorFolderPath, "*.dds").ToList();
+			this.cursorFiles.Add(cursorFile);
+		}
 
-			cursorFiles.Remove(lastCursorFile);
-
-			if (cursorFiles.Any())
+		var cursorDir = Path.Join(modDir, "cursor");
+		if (Directory.Exists(cursorDir))
+		{
+			foreach (var file in Directory.EnumerateFiles(cursorDir, "*.dds"))
 			{
-				var random = new Random();
-				var randomCursorFile = cursorFiles[random.Next(cursorFiles.Count)];
-
-				LoadCursor(randomCursorFile, config.ModName);
-				lastCursorFile = randomCursorFile; // Static :adachitrue:
+				this.cursorFiles.Add(file);
 			}
 		}
 	}
 
-	private void LoadCursor(string cursorFile, string modName)
+	private void LoadCursor(string cursorFile)
 	{
 		var data = File.ReadAllBytes(cursorFile);
 		*this.cursorPtr = Marshal.AllocHGlobal(data.Length);
 		Marshal.Copy(data, 0, *this.cursorPtr, data.Length);
-		Log.Information($"Using custom cursor from: {modName}");
+		Log.Information($"Using custom cursor.");
 	}
-
 
 	#region For Exports, Serialization etc.
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
