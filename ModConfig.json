@@ -2,7 +2,7 @@
   "ModId": "P5R.CustomCursor",
   "ModName": "Custom Cursor",
   "ModAuthor": "zutomayofan50",
-  "ModVersion": "1.0.0",
+  "ModVersion": "1.1.0",
   "ModDescription": "Customize P5R\u0027s mouse cursor.",
   "ModDll": "P5R.CustomCursor.dll",
   "ModIcon": "Preview.png",
