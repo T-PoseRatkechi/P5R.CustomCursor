@@ -3,6 +3,7 @@ using Reloaded.Hooks.Definitions;
 using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
 using Reloaded.Mod.Interfaces;
 using Reloaded.Mod.Interfaces.Internal;
+using System.Drawing;
 using System.Runtime.InteropServices;
 
 namespace P5R.CustomCursor;
@@ -28,7 +29,7 @@ public unsafe class Mod : ModBase
 		this.owner = context.Owner;
 		this.modConfig = context.ModConfig;
 
-		Log.Initialize("CustomCursor", this.log);
+		Log.Initialize("CustomCursor", this.log, Color.White);
 
 		this.cursorPtr = (nint*)Marshal.AllocHGlobal(sizeof(nint));
 		*this.cursorPtr = IntPtr.Zero;
